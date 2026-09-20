@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SortRight: Which bin does it go in?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #EEF2F5;
+    --surface: #FFFFFF;
+    --ink: #14212B;
+    --muted: #55656F;
+    --line: #D3DCE3;
+    --field: #FFFFFF;
+    --btn-bg: #14212B;
+    --btn-ink: #FFFFFF;
+    --code-bg: #F3F6F8;
+
+    --wet: #2E7D4F;
+    --dry: #2B5FA8;
+    --red: #B8362E;
+    --ewaste: #8F5A00;
+    --unknown: #55656F;
+
+    --font-display: "Bricolage Grotesque", "Trebuchet MS", "Segoe UI", sans-serif;
+    --font-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F171D;
+      --surface: #182129;
+      --ink: #E8EEF2;
+      --muted: #9CACB8;
+      --line: #2A3641;
+      --field: #182129;
+      --btn-bg: #E8EEF2;
+      --btn-ink: #0F171D;
+      --code-bg: #0F171D;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F171D;
+    --surface: #182129;
+    --ink: #E8EEF2;
+    --muted: #9CACB8;
+    --line: #2A3641;
+    --field: #182129;
+    --btn-bg: #E8EEF2;
+    --btn-ink: #0F171D;
+    --code-bg: #0F171D;
+  }
+
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 40px 20px 56px; }
+
+  .brand { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: 0.01em; color: var(--muted); margin: 0 0 28px; }
+
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.3rem, 7.5vw, 3.6rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin: 0 0 14px;
+  }
+  .lede { color: var(--muted); margin: 0 0 26px; max-width: 46ch; }
+
+  .ask { display: flex; gap: 10px; flex-wrap: wrap; }
+  .ask input {
+    flex: 1 1 260px;
+    min-width: 0;
+    font: inherit;
+    padding: 15px 16px;
+    border-radius: 12px;
+    border: 2px solid var(--line);
+    background: var(--field);
+    color: var(--ink);
+  }
+  .ask input::placeholder { color: var(--muted); }
+  .ask input:focus-visible, button:focus-visible, summary:focus-visible {
+    outline: 3px solid var(--dry);
+    outline-offset: 2px;
+  }
+  .primary {
+    font: inherit; font-weight: 600;
+    padding: 15px 22px;
+    border-radius: 12px;
+    border: 0;
+    background: var(--btn-bg);
+    color: var(--btn-ink);
+    cursor: pointer;
+  }
+  .primary:hover { opacity: 0.9; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; padding: 0; list-style: none; }
+  .chip {
+    font: inherit; font-size: 15px;
+    padding: 6px 13px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--muted); }
+
+  #results { margin-top: 34px; display: grid; gap: 14px; }
+  #results:empty { display: none; }
+
+  .result {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 10px solid var(--c, var(--unknown));
+    border-radius: 10px;
+    padding: 18px 20px 16px;
+  }
+  .result-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .item-name { font-family: var(--font-display); font-weight: 700; font-size: 1.35rem; margin: 0; text-transform: capitalize; overflow-wrap: anywhere; }
+  .pill {
+    background: var(--c, var(--unknown));
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 4px 13px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .hint { color: var(--muted); font-size: 15px; margin: 0 0 10px; }
+  .result p { margin: 0 0 8px; }
+  .result strong { font-weight: 600; }
+  .match { color: var(--muted); font-size: 14px; margin-top: 10px; }
+
+  details { margin-top: 10px; }
+  summary { cursor: pointer; font-size: 15px; font-weight: 500; color: var(--muted); }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin: 8px 0 0;
+    font-size: 13.5px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--ink);
+  }
+
+  #tally { margin-top: 18px; color: var(--muted); font-size: 15px; }
+  #tally:empty { display: none; }
+
+  footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14.5px; }
+  footer p { margin: 0 0 8px; max-width: 62ch; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <p class="brand">SortRight</p>
+  <h1>Which bin does it go in?</h1>
+  <p class="lede">Type what you're throwing away. Add several items with commas and get a bin for each one.</p>
+
+  <div class="ask">
+    <input id="q" type="text" autocomplete="off" placeholder="banana peel, old charger, pizza box" aria-label="Items to throw away">
+    <button class="primary" id="go" type="button">Find the bin</button>
+  </div>
+
+  <ul class="chips" id="chips" aria-label="Try an example"></ul>
+
+  <section id="results" aria-live="polite"></section>
+  <p id="tally"></p>
+
+  <footer>
+    <p>Bin colours and rules differ between cities and campuses. Confirm with your local municipal guidelines before relying on a result.</p>
+    <p>Prototype note: matching runs in your browser over a small set of segregation rules. The prompt under each result is what the full version sends to a language model such as IBM Granite, using only the retrieved rule as context.</p>
+  </footer>
+</main>
+
+<script>
+const BINS = {
+  wet:      { name: "Wet waste bin",              hint: "Usually the green bin",         color: "var(--wet)" },
+  dry:      { name: "Dry waste bin",              hint: "Usually the blue bin",          color: "var(--dry)" },
+  hazard:   { name: "Sanitary and hazardous bin", hint: "Usually the red bin",           color: "var(--red)" },
+  ewaste:   { name: "E-waste collection",         hint: "Not a household bin. Use a collection point.", color: "var(--ewaste)" }
+};
+
+// Small knowledge base: each rule is one retrievable "document".
+const RULES = [
+  { bin: "wet", keywords: ["peel","fruit","vegetable","veggie","fruit waste","vegetable waste"],
+    why: "Fruit and vegetable scraps rot quickly and can be composted.",
+    how: "Drop it in loose. Do not wrap it in a plastic bag." },
+  { bin: "wet", keywords: ["food","leftover","cooked food","rice","roti","chapati","curry","dal","sabzi","food waste"],
+    why: "Cooked and uncooked food is organic waste and can be composted or made into biogas.",
+    how: "Drain extra liquid and put the food in loose." },
+  { bin: "wet", keywords: ["tea leaves","tea bag","coffee grounds","coffee powder","tea powder"],
+    why: "Tea and coffee residue is organic and compostable.",
+    how: "Empty the leaves or grounds into the wet bin. If a tea bag is plastic mesh, put that part in the dry bin." },
+  { bin: "wet", keywords: ["egg shell","eggshell","bone","meat","fish","chicken","mutton"],
+    why: "Animal food waste is organic and goes with wet waste.",
+    how: "Drain liquid and keep it out of plastic bags." },
+  { bin: "wet", keywords: ["flower","leaf","leaves","grass","garden waste","puja flowers","garland"],
+    why: "Plant material is organic and breaks down into compost.",
+    how: "Remove any plastic, thread or wire first." },
+  { bin: "wet", keywords: ["coconut shell","coconut","sugarcane"],
+    why: "Coconut shells and sugarcane pulp are plant waste and compostable, though slow to break down.",
+    how: "Break large shells into smaller pieces if you can." },
+
+  { bin: "dry", keywords: ["newspaper","paper","notebook","magazine","cardboard","book","printout","exam sheet","paper cup"],
+    why: "Clean paper and cardboard can be recycled into new paper products.",
+    how: "Keep it dry and flat. Paper cups have a plastic lining, so rinse them and keep them with dry waste." },
+  { bin: "dry", keywords: ["pizza box","greasy box","food box"],
+    why: "Cardboard is recyclable, but grease ruins the recycling batch.",
+    how: "Tear off the greasy part and put it in the wet bin. The clean part goes in dry." },
+  { bin: "dry", keywords: ["plastic bottle","water bottle","pet bottle","bottle","cold drink bottle"],
+    why: "PET and other plastic bottles are among the most recyclable plastics.",
+    how: "Empty it, rinse it, crush it and put the cap back on." },
+  { bin: "dry", keywords: ["glass","glass bottle","jar","broken glass"],
+    why: "Glass can be recycled again and again without losing quality.",
+    how: "Rinse it. Wrap broken glass in newspaper and label it before you bin it, to protect waste workers." },
+  { bin: "dry", keywords: ["plastic bag","carry bag","polythene","poly bag","plastic cover","plastic","plastic wrap"],
+    why: "Plastic can be recycled only if it stays clean and dry and is not mixed with food waste.",
+    how: "Rinse if dirty, dry it, and bundle loose bags together." },
+  { bin: "dry", keywords: ["can","tin","aluminium","aluminum","foil","steel","metal","cold drink can"],
+    why: "Metals are highly recyclable and worth collecting.",
+    how: "Rinse it and flatten cans if possible. Wipe foil clean." },
+  { bin: "dry", keywords: ["tetra pak","juice box","milk packet","milk carton","carton"],
+    why: "Layered cartons can be recycled at specialised plants when collected clean.",
+    how: "Rinse it and flatten it before putting it in the dry bin." },
+  { bin: "dry", keywords: ["chips packet","chip packet","wrapper","biscuit packet","packet","sachet","chocolate wrapper","snack packet"],
+    why: "Multi-layer packaging is hard to recycle, but it must stay out of the wet bin so it can be collected with dry waste.",
+    how: "Shake out crumbs and keep it dry. Try to buy less single-use packaging." },
+  { bin: "dry", keywords: ["thermocol","styrofoam","foam"],
+    why: "Thermocol is bulky, light and not compostable, so it belongs with dry waste.",
+    how: "Break it down and bundle it so it does not blow away." },
+  { bin: "dry", keywords: ["cloth","clothes","textile","old shirt","rag","shoe","slipper","jeans"],
+    why: "Textiles and footwear are dry waste and can often be reused.",
+    how: "Donate it if it is still usable. Otherwise bag it dry." },
+  { bin: "dry", keywords: ["plastic cup","plate","thali","spoon","straw","disposable","paper plate"],
+    why: "Disposable tableware is dry waste when clean.",
+    how: "Scrape leftover food into the wet bin first, then put the item in dry." },
+  { bin: "dry", keywords: ["pen","marker","pencil","eraser","stationery"],
+    why: "Stationery is mostly plastic or wood and is dry waste.",
+    how: "Collect used pens in one place. Some schools and NGOs run pen-recycling drives." },
+
+  { bin: "hazard", keywords: ["sanitary pad","sanitary napkin","napkin","pad","diaper","tampon","menstrual"],
+    why: "Sanitary products carry body fluids and cannot be recycled or composted.",
+    how: "Wrap it in paper or newspaper, mark the wrapper with a red dot, and keep it apart from other waste. Never flush it." },
+  { bin: "hazard", keywords: ["mask","face mask","bandage","band aid","plaster","gloves","used cotton","cotton","tissue"],
+    why: "Items soiled with blood or body fluids can spread infection and must not be mixed with recyclables.",
+    how: "Seal it in a paper wrap. Tissue soiled only with food can go in the wet bin instead." },
+  { bin: "hazard", keywords: ["medicine","tablet","expired medicine","syrup","capsule","pills"],
+    why: "Medicines can pollute soil and water if thrown in a normal bin or flushed.",
+    how: "Keep it in its strip or bottle and return it to a pharmacy or health centre that accepts old medicines." },
+  { bin: "hazard", keywords: ["syringe","needle","blade","razor"],
+    why: "Sharps can injure sanitation workers and spread infection.",
+    how: "Put a needle cap on it or push it into a hard bottle or box, label it sharp, and take used syringes to a clinic." },
+  { bin: "hazard", keywords: ["paint","pesticide","insecticide","chemical","thinner","aerosol","spray can","mosquito coil","cleaner","phenyl","acid"],
+    why: "Household chemicals are toxic and can leak into soil and groundwater.",
+    how: "Keep it in its original closed container and hand it to a hazardous-waste collection drive." },
+  { bin: "hazard", keywords: ["cfl","cfl bulb","tube light","tubelight","fluorescent","thermometer"],
+    why: "These contain mercury, which is harmful if the glass breaks.",
+    how: "Keep it intact in its box and give it to an e-waste or hazardous-waste collector." },
+
+  { bin: "ewaste", keywords: ["mobile","phone","charger","cable","wire","earphones","headphones","laptop","keyboard","mouse","remote","pendrive","usb","adapter","circuit","computer","printer","cartridge","led bulb","bulb"],
+    why: "Electronics contain metals and chemicals that are valuable to recover and harmful in landfill.",
+    how: "Drop it at an authorised e-waste collection point or a brand take-back centre. Wipe personal data first." },
+  { bin: "ewaste", keywords: ["battery","batteries","button cell","power bank"],
+    why: "Batteries hold toxic metals and can catch fire in a garbage truck.",
+    how: "Keep them dry and cool, tape the terminals of large batteries, and hand them to an e-waste collector. A swollen battery must be kept away from heat." }
+];
+
+// Turn every keyword into a whole-word regex that also accepts a plural.
+const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const COMPILED = RULES.map(r => ({
+  ...r,
+  matchers: r.keywords.map(k => ({ k, re: new RegExp("\\b" + escapeRe(k) + "(?:s|es)?\\b", "i") }))
+}));
+
+// Retrieval step: the most specific (longest) matching keyword wins.
+function retrieve(item) {
+  let best = null;
+  for (const rule of COMPILED) {
+    for (const { k, re } of rule.matchers) {
+      if (re.test(item) && (!best || k.length > best.keyword.length)) best = { rule, keyword: k };
+    }
+  }
+  return best;
+}
+
+// Prompt step: what the full version would send to the language model.
+function buildPrompt(item, hit) {
+  const context = hit
+    ? `${BINS[hit.rule.bin].name}. ${hit.rule.why} ${hit.rule.how}`
+    : "No matching rule found.";
+  return [
+    "You are a waste segregation assistant for Indian campuses and homes.",
+    "Use ONLY the context below. If the context does not cover the item, say you are not sure",
+    "and tell the person to check their local municipal rules. Never guess for hazardous items.",
+    "",
+    "Context: " + context,
+    "Question: Which bin does \"" + item + "\" go in?",
+    "Answer in two short sentences."
+  ].join("\n");
+}
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined) n.textContent = text;
+  return n;
+}
+
+const counts = {};
+let checked = 0;
+
+function renderItem(item) {
+  const hit = retrieve(item);
+  const card = el("article", "result");
+  const head = el("div", "result-head");
+  head.appendChild(el("h2", "item-name", item));
+
+  if (hit) {
+    const bin = BINS[hit.rule.bin];
+    card.style.setProperty("--c", bin.color);
+    head.appendChild(el("span", "pill", bin.name));
+    card.appendChild(head);
+    card.appendChild(el("p", "hint", bin.hint));
+    const why = el("p"); why.appendChild(el("strong", null, "Why: ")); why.appendChild(document.createTextNode(hit.rule.why));
+    const how = el("p"); how.appendChild(el("strong", null, "Before you throw it: ")); how.appendChild(document.createTextNode(hit.rule.how));
+    card.appendChild(why); card.appendChild(how);
+    card.appendChild(el("p", "match", "Matched the rule for “" + hit.keyword + "”."));
+    counts[hit.rule.bin] = (counts[hit.rule.bin] || 0) + 1;
+  } else {
+    head.appendChild(el("span", "pill", "Not sure yet"));
+    card.appendChild(head);
+    card.appendChild(el("p", null, "I don't have a rule for this item, so I won't guess. Check your municipal corporation's segregation guide or ask your campus sanitation team. If it might be hazardous, keep it separate."));
+    counts.unknown = (counts.unknown || 0) + 1;
+  }
+
+  const d = el("details");
+  d.appendChild(el("summary", null, "Show the prompt sent to the language model"));
+  d.appendChild(el("pre", null, buildPrompt(item, hit)));
+  card.appendChild(d);
+  checked += 1;
+  return card;
+}
+
+function updateTally() {
+  const t = document.getElementById("tally");
+  if (!checked) { t.textContent = ""; return; }
+  const names = { wet: "wet", dry: "dry", hazard: "sanitary or hazardous", ewaste: "e-waste", unknown: "unsure" };
+  const parts = Object.keys(counts).map(k => counts[k] + " " + names[k]);
+  t.textContent = "Checked " + checked + " item" + (checked === 1 ? "" : "s") + " so far: " + parts.join(", ") + ".";
+}
+
+function run() {
+  const input = document.getElementById("q");
+  const items = input.value.split(/[,;\n+]|\band\b/i).map(s => s.trim()).filter(Boolean).slice(0, 10);
+  const box = document.getElementById("results");
+  box.textContent = "";
+  if (!items.length) {
+    const msg = el("p", null, "Type at least one item, like “banana peel”.");
+    box.appendChild(msg);
+    return;
+  }
+  items.forEach(i => box.appendChild(renderItem(i)));
+  updateTally();
+}
+
+document.getElementById("go").addEventListener("click", run);
+document.getElementById("q").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
+
+const EXAMPLES = ["banana peel", "plastic bottle", "old charger", "used sanitary pad", "pizza box", "expired medicine"];
+const chips = document.getElementById("chips");
+EXAMPLES.forEach(x => {
+  const li = document.createElement("li");
+  const b = el("button", "chip", x);
+  b.type = "button";
+  b.addEventListener("click", () => { document.getElementById("q").value = x; run(); });
+  li.appendChild(b);
+  chips.appendChild(li);
+});
+</script>
+</body>
+</html>
